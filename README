@@ -1,6 +1,9 @@
 巻末　C++14機能
 
-C++11の参考書(https://github.com/EzoeRyou/cpp-book)をC++14に対応させたいが、
+GitHub Pagesで閲覧: http://ezoeryou.github.io/cpp14-appendix/
+
+C++11の参考書: https://github.com/EzoeRyou/cpp-book
+をC++14に対応させたいが、
 C++11のドラフトを元に書かれた既存の文章を変更するのは難しいので、
 C++14機能だけを別に解説することにした。
 
