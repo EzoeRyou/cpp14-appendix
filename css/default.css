@@ -1,0 +1,77 @@
+body
+{
+    background-color: #efefef ;
+    font-size : large ;
+    line-height : 150% ;
+}
+
+header
+{
+    text-align : center ;
+}
+
+article
+{
+    padding-left : 1em ;
+    padding-right : 1em ;
+}
+
+h1, h2, h3, h4, h5, h6
+{
+    font-weight : normal ;
+    font-style : normal ;
+    font-size : x-large ;
+}
+
+a
+{
+    text-decoration : none ;
+}
+
+a:hover
+{
+    text-decoration : underline ;
+    background-color : #ffffdd ;
+    border-ladius : 4em ;
+}
+
+
+pre > code
+{
+    display : block ;
+    font-family : monospace ;
+    font-size : x-large ;
+    border-style : solid ;
+    border-width : medium ;
+    border-color : black ;
+    border-radius : 0.4em ;
+    padding : 0.5em ;
+    word-wrap : break-word ;
+    white-space : pre-wrap ;
+}
+
+blockquote
+{
+    border-style : solid ;
+    border-width : medium ;
+    border-color : green ;
+    border-radius : 0.4em ;
+
+    padding-left : 1em ;
+    padding-right : 1em ;
+
+}
+
+.dwango-ad
+{
+    border-style : solid ;
+    border-width : medium ;
+    border-color : blue ;
+    border-radius : 0.4em ;
+
+    padding : 1em ;
+
+    font-size : x-large ;
+}
+
+

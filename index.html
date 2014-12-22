@@ -1,0 +1,599 @@
+<!doctype html>
+<html>
+
+<head>
+
+<title>
+巻末: C++14の新機能
+</title>
+
+
+<link rel="stylesheet" type="text/css" href="css/default.css"></link>
+<link rel="stylesheet" type="text/css" href="css/github.css"></link>
+<script src="js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+
+
+<script type="application/javascript" >
+"use strict"  ;
+
+function find_heading_at(headings, y)
+{
+    if ( !headings.length || y < headings[0].offsetTop )
+        return null ;
+
+    var i = 0 ;
+    var j = headings.length ;
+    while ( j - i > 1 )
+    {
+        var k = Math.floor((i + j) / 2) ;
+        if ( headings[k].offsetTop <= y )
+            i = k ;
+        else
+            j = k ;
+    }
+
+    return headings[i] ;
+}
+
+function setup_heading_scroll_handler()
+{
+    if ( !window.history || !history.pushState )
+        return ;
+
+    var headings = Array.prototype.slice.call(
+        document.querySelectorAll("h1[id]"));
+    headings.sort(function(left, right) {
+        return left.offsetTop - right.offsetTop ;
+    }) ;
+
+    document.addEventListener("scroll", function() {
+        var current_heading = find_heading_at(headings, window.scrollY) ;
+        var id = "" ;
+        if ( current_heading )
+            id = current_heading.getAttribute("id") ;
+        if ( location.hash.replace(/^#/, "") !== id )
+        {
+            history.replaceState(null, null, "#" + id) ;
+        }
+    }, false ) ;
+}
+
+// helper functions
+// calculate nth <li> child element from parent node.
+function calculate_nth_child_element(element)
+{
+    var n = 1 ;
+    var iter = element.parentNode.firstElementChild ;
+    while (!iter.isSameNode(element))
+    {
+        ++n ;
+        iter = iter.nextElementSibling ;
+    }
+
+    return n ;
+}
+
+// generate chapter numbers for a given li element.
+function generate_chapter_numbers( li )
+{
+    var number = calculate_nth_child_element( li ) ;
+
+    // parent node shall be an ul element.
+    var parent = li.parentNode ;
+
+    // if ul's parent element's id attribute is "index"
+    if ( parent.parentNode.getAttribute( "id" ) == "index" )
+    { // we reached the top of the index list.
+        return number ;
+    }
+    else
+    { // continues to the upper chapter.
+        /// parent.parentNode shall be an li element.
+        return generate_chapter_numbers( parent.parentNode ) + "." + number ;
+    }        
+}
+
+// add chapter numbers to all anchor elements.
+function add_chapter_numbers()
+{
+    var content = document.getElementById("content") ;
+    var index = document.getElementById("index") ;
+    var anchor_list = document.getElementsByTagName("a") ;
+
+    // itarete through each anchor element to insert the corresponding chapter numbers.
+    for (var i = 0 ; i != anchor_list.length ; ++i)
+    {
+        var node = anchor_list.item(i) ;
+
+        var href = node.getAttribute("href") ;
+        var selector = 'a[href="' + href + '"]' ;
+        var query = index.querySelector(selector) ;
+        if ( query == null )
+        {
+            continue ;
+        }
+
+        var li = query.parentNode ;
+
+        if (li == null)
+            continue ;
+
+        var chapter_numbers = generate_chapter_numbers(li) ;
+        node.parentNode.insertBefore( document.createTextNode(chapter_numbers + " "), node ) ;
+    }
+}
+
+// recursively construct the index.
+function generate_nested_index( parent, element, selector )
+{
+    var list = element.querySelectorAll( selector ) ;
+
+    if ( list.length == 0 )
+        return ;
+
+    var ul = document.createElement("ul") ;
+    parent.appendChild( ul ) ;
+
+
+
+    for ( var i = 0 ; i != list.length ; ++i )
+    {
+        var elem = list.item(i) ;
+        var heading = elem.firstElementChild ; // must be heading element
+/*
+        var pattern = /h[1-6]/ ;
+        if ( heading == null ||
+             pattern.test(heading.nodeName) == false ||
+             // workaround
+             heading.firstElementChild == null
+            )
+        {
+            continue ;
+        }
+*/
+        
+        var li = document.createElement("li") ;
+        li.appendChild( heading.firstElementChild.cloneNode( true ) ) ;
+        ul.appendChild( li ) ;
+
+        generate_nested_index( li, elem, selector + " > article" ) ;
+    }
+}
+
+// construct a index from content's DOM.
+function generate_index()
+{
+    var index = document.getElementById("index") ;
+    var content = document.getElementById("content") ;
+    generate_nested_index( index, content, "#content > article" ) ;
+}
+
+function listener()
+{
+    generate_index() ;
+    add_chapter_numbers() ;
+    setup_heading_scroll_handler() ;
+}
+
+
+window.addEventListener("load", listener, false ) ;
+
+</script>
+
+
+
+</head>
+
+<body>
+
+<div id="index">
+</div>
+
+<div id="content">
+
+<article class="toplevel">
+<h1 id="intro"><a href="#intro">巻末: C++14の新機能</a></h1>
+
+<p>
+C++14は、2014年に制定されたC++11の次のC++標準規格である。C++14の位置づけとしてはマイナーアップデートで、新機能の追加は少ない。
+</p>
+
+<article>
+<h1 id="binary-literal"><a href="#binary-literal">二進数リテラル(binary literal)</a></h1>
+
+<p>
+二進数リテラルは、整数リテラルである。
+</p>
+
+<pre><code>int a = 0b1011 ; // 11
+inb b = 0b10000000 ; // 128
+</code></pre>
+
+<p>
+プレフィクス0b、もしくは0Bに続いて'1'か'0'が続く整数リテラルは、二進数リテラルである。
+</p>
+
+<p>
+二進数リテラルは、浮動小数点数リテラルではない。
+</p>
+
+<pre><code>double d = 0b111.11 ; // エラー
+</code></pre>
+
+<p>
+整数リテラルのサフィックスは、二進数リテラルにも適用できる。
+</p>
+
+<pre><code>auto a = 0b0u ; // unsigned int
+auto b = 0b0l ; // long
+</code></pre>
+
+<p>
+プログラミングで整数を扱うときに、二進数で考えたい場合がよくあるが、C++と、その土台となったC言語には、二進数リテラルが存在しなかった。C++14では、ようやく二進数リテラルが追加された。
+</p>
+
+</article>
+
+<article>
+<h1 id="digit-separators"><a href="#digit-separators">桁区切り(digit separator)</a></h1>
+
+<p>
+桁区切り(digit deparator)とは、整数リテラルと浮動小数点数リテラルの桁を区切ることができる文法である。
+</p>
+
+<p>
+区切り文字には、シングルクオート' を使う。
+</p>
+
+<pre><code>int i = 1'000'000 ;
+double d = 3.14159'26535'89793 ;
+std::uint32_t bits =  0b11001111'01111000'11111011'11001101 ;
+std::uint32_t hex = 0xde'ad'be'af ;
+</code></pre>
+
+<p>
+区切る桁数は任意である。
+</p>
+
+<pre><code>int x = 1'0'00'000'0000'00'0 ;
+</code></pre>
+
+<p>
+1000000と10000000でどちらが大きいか、また具体的にいくつなのか。人間の目では判断しにくい。1'000'000と10'000'000ならば、人間の目にも判断しやすい。
+</p>
+
+
+<p>
+桁区切りはソースコード中の数値表記を、人間の目に読みやすくしてくれる。コードの意味上の違いはない。
+</p>
+
+</article>
+
+<article>
+<h1 id="init_captures"><a href="#init_captures">汎用lambdaキャプチャー(Generalized Lambda-capture)</a></h1>
+
+<p>
+汎用lambdaキャプチャー(generalized lambda capture)、あるいは、初期化キャプチャー(init-capture)は、C++14で追加された新しいlambdaキャプチャーである。
+</p>
+
+<pre>
+初期化キャプチャー:
+    識別子 初期化子
+    &amp; 識別子 初期化子
+</pre>
+
+<p>
+以下のように書く。
+</p>
+
+<pre><code>[ x = 0 ](){ return x ; } ;
+</code></pre>
+
+<p>
+これによって、lambda式によるキャプチャーがより便利になる。
+</p>
+
+<p>
+lambda式によって生成されるクロージャー型のデータメンバーを書くシンタックスシュガーだと考えることができる。
+</p>
+
+<pre><code>struct closure_type
+{
+private :
+    int x ;
+
+public :
+    closure_type( int init )
+        : x( init ) { }
+
+    auto operator ( ) () const
+    {
+        return x ;
+    }
+} ;
+</code></pre>
+
+<p>
+初期化キャプチャーの型は"auto 初期化キャプチャー"と書いた時の変数の型と同等である。
+</p>
+
+<pre><code>// aの型は、
+// auto a = expr ;
+// と書いた時の型に同じ
+[ a = expr ]{ } ;
+
+// auto &amp; b = expr
+[ &amp; b = expr ] { } ;
+</code></pre>
+
+<p>
+初期化キャプチャーの用途は様々だが、機能追加にあたって主張された用途としては、クラスの非staticデータメンバーのコピーキャプチャーだ。
+</p>
+
+<p>
+C++11のlambda式では、クラスの非staticデータメンバーはキャプチャーできない。
+</p>
+
+<pre><code>struct X
+{
+    int m ;
+    void f()
+    {
+        [m]{ return m ; } ; // エラー
+        [=]{ return m ; } ; // #1 OK、ただし・・・
+    }
+} ;
+</code></pre>
+
+<p>
+lambda式がキャプチャーしているのは、thisポインターである。#1は、以下のように書くのと等しい
+</p>
+
+<pre><code>void X::f()
+{
+    [this]{ return this-&gt;m ; } ;
+}
+</code></pre>
+
+<p>
+したがって、クラスの非staticデータメンバーは、thisポインターを経由した間接的なアクセスをしているのであって、実質はリファレンスキャプチャーといえる。このことは、クラスのメンバー関数からクロージャーオブジェクトを返す際に問題になる。
+</p>
+
+
+<pre><code>struct X
+{
+    int m ;
+
+    auto get_closure()
+    {
+        return [=]{ return m ; } ;
+    }
+} ;
+
+int main()
+{
+    std::function&lt; int() &gt; f ;
+
+    { // ブロックスコープ開始
+        X x{} ;
+        f = x.get_closure() ;
+    // ブロックスコープ終了
+    
+    } // xはすでに破棄されている
+
+    // クロージャーオブジェクトを呼び出す
+    f() ; // 実行時エラー
+}
+</code></pre>
+
+<p>
+上記のコードは、すでに破棄されたオブジェクトを参照しているので、挙動は未定義である。
+</p>
+
+<p>
+C++11では、この場合にmをコピーキャプチャーするには、まずローカル変数を宣言しなければならなかった。
+</p>
+
+<pre><code>auto X::get_closure()
+{
+    int m = this-&gt;m ;
+    return [m]{ return }
+}
+</code></pre>
+
+<p>
+初期化キャプチャーにより、以下のように書ける。
+</p>
+
+<pre><code>auto X::get_closure()
+{
+    return [ m = m ] { return m ; } ;
+}
+</code></pre>
+
+<p>
+また、クロージャーオブジェクトにムーブすることもできるようになった。
+</p>
+
+<pre><code>auto f()
+{
+    std::vector&lt;int&gt; v { 1,2,3,4,5 } ;
+    return [ v = std::move(v) ] { ... } ;
+    // これ以降vは使わない
+}
+</code></pre>
+
+
+<p>
+ここで、従来のコピーキャプチャを使うと、コピーされてしまう。初期化キャプチャーを使うことにより、ムーブすることができる。
+</p>
+
+<p>
+その他、変数の名前が長すぎるときに、短い名前をつけることもできる。
+</p>
+
+<pre><code class="cpp">void f()
+{
+    int really_long_name = 0 ;
+    [ &amp; x = really_long_name ] { ... } ;
+}
+</code></pre>
+
+</article>
+
+<article>
+<h1 id="generic_lambda"><a href="#generic_lambda">ジェネリックlambda</a></h1>
+
+<p>
+ジェネリックlambdaは、lambda式の仮引数の型を省略できる機能である。型指定子としてautoを書くと、ジェネリックlambdaとなる。
+</p>
+
+<pre><code>int main()
+{
+    auto f = []( auto x ) { return x } ;
+
+    f( 0 ) ;
+    f( 0.0 ) ;
+    f( 'A' ) ;
+    f( "hello" ) ;
+}
+</code></pre>
+
+<p>
+実装としては、クロージャー型のoperator ()をメンバーテンプレートにするシンタックスシュガーだと考えることができる。
+</p>
+
+<pre><code>
+</code></pre>
+
+<pre><code>struct closure_type
+{
+    template &lt; typename T &gt;
+    auto operator () ( T x ) const
+    {
+        return x ;
+    }
+} ;
+
+int main()
+{
+    closure_type f ;
+    f( 0 ) ;
+    f( 0.0 ) ;
+    f( 'A' ) ;
+    f( "hello" ) ;
+}
+</code></pre>
+
+<p>
+利用例としては、まず型名を書くのがわずらわしい場合に使える
+</p>
+
+<pre><code>void f( std::list&lt; std::vector&lt; std::string &gt; &gt; &amp; c )
+{
+    // 面倒
+    std::for_each( c.begin(), c.end(),
+        []( std::vector&lt; std::string&gt; &amp; elem )
+        { ... }
+    ) ;
+
+    // 簡単
+    std::for_each( c.begin(), c.end(),
+        []( auto &amp; elem )
+        { ... }
+    ) ;
+}
+</code></pre>
+
+<p>
+また、コンパイル時に複数の型の実引数が渡される場合にも使える。
+</p>
+
+<pre><code>template &lt; typename Printer &gt;
+void f( Printer &amp;&amp; p )
+{
+    p( 123 ) ;
+    p( 1.23 ) ;
+    p( "123" ) ;
+}
+
+int main()
+{
+    f( []( auto &amp;&amp; elem ){ std::cout &lt;&lt; elem ; } ) ;
+}
+</code></pre>
+
+</article>
+
+<article>
+<h1 id="sized_deallocation">
+<a href="#sized_deallocation">サイズ付き解放関数</a>
+</h1>
+
+<p>
+解放関数(operator delete/delete[])に、ストレージのサイズを引数で受け取るオーバーロードが追加された。
+</p>
+
+<pre><code>
+void operator delete( void *, std::size_t ) noexcept ;
+void operator delete[]( void *, std::size_t ) noexcept ;
+</code></pre>
+
+<p>
+二番目のstd::size_t型の引数で、ストレージを確保した際のサイズを得ることができる。
+</p>
+
+<pre><code>
+void * operator new( std::size_t size )
+
+    // 何らかの方法でsizeバイトのストレージ確保 
+    return ...
+}
+
+void operator delete( void * ptr , std::size_t size )
+{
+    // ptrは解放すべきストレージのアドレス
+    // sizeはストレージのサイズ
+}
+</code></pre>
+
+<p>
+ストレージ管理のデータ構造やアルゴリズムによっては、解放すべきストレージのサイズが分かっている場合、効率よく解放できるが、わからない場合、アドレスによって検索しなければならないということがある。生のストレージのサイズはC++の実装が管理しているので、C++14ではそのサイズを得る方法を追加した。
+</p>
+
+<p>
+従来、クラスのメンバーとしての確保解放関数には提供されていた方法を、グローバルな解放関数のオーバーロードにも追加したものだ。
+</p>
+
+</article>
+
+<article>
+<h1 id="constexpr"><a href="#constexpr">constexpr関数の制限緩和</a></h1>
+
+<p>
+C++11のconstexpr関数には、極めて厳しい制限があった。
+</p>
+
+<ul>
+<li>関数の本体は実質return文のみ</li>
+<li>ifやswitchは禁止</li>
+<li>for, while, do-whileは禁止</li>
+<li>オブジェクトの変更は禁止</li>
+</ul>
+
+<p>
+</p>
+</article>
+
+
+</article>
+
+</div>
+
+
+
+</body>
+
+</html>
