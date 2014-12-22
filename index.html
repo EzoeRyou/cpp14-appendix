@@ -584,7 +584,193 @@ C++11のconstexpr関数には、極めて厳しい制限があった。
 </ul>
 
 <p>
+しかし、多くの数値計算は、条件分岐やループや値の変更が必要となる。
 </p>
+
+<p>
+例えば、平方根を計算したいとする。数値Sの平方根Xは以下の方法で計算できる
+</p>
+
+<ol>
+<li>適当な初期値X0を取る</li>
+<li>
+Xn+1をXnとS/Snの平均とする
+</li>
+
+<li>
+十分な精度が得られるまでステップ2を繰り返す
+</li>
+</ol>
+
+<p>
+通常の関数で実装すると、以下のようになる。
+</p>
+
+<pre><code>template &lt; typename T &gt;
+T sqrt( T s )
+{
+    T x = s / 2.0 ; // 適当な初期値
+    T prev = 0.0 ;
+
+    while ( x != prev )
+    { // 十分な精度が得られるまでステップ2を繰り返す
+        prev = x ;
+        x = (x + s / x ) / 2.0 ; // ステップ2
+    }
+    return x ;
+}
+</code></pre>
+
+<p>
+このコードには、条件分岐、ループ、変数の変更が出てくる。
+</p>
+
+<p>
+C++11のconstexpr関数でこの処理を書くことはできる。ただし、条件分岐は条件演算子に、ループは再帰に、変数の変更は引数に書き換えなければならない。
+</p>
+
+<pre><code>template &lt; typename T &gt;
+constexpr T sqrt_aux( T s, T x, T prev )
+{
+    return x != prev ? 
+        sqrt_aux( s, ( x + s / x ) / 2.0, x ) : x ;
+}
+
+template &lt; typename T &gt;
+constexpr T sqrt( T s )
+{ return sqrt_aux( s, s/2.0, s ) ; }
+</code></pre>
+
+<p>
+その結果、上のような極めて読みにくいコードを書かなければならない。
+</p>
+
+<p>
+C++14では、この制限を大幅に緩和した。C++14のconstexpr関数では、以下のことができる。
+</p>
+
+<ul>
+<li>static/thread_localではなく、未初期化でもない変数の宣言</li>
+<li>if文とswitch文</li>
+<li>for, range-based for, while, do-while</li>
+<li>
+敵数式の評価時に寿命が始まるオブジェクトの変更
+</li>
+</ul>
+
+<p>
+その結果、constexpr関数によるsqrtは、以下のように書ける。
+</p>
+
+<pre><code>template &lt; typename T &gt;
+constexpr T sqrt( T s )
+{
+    T x = s / 2.0 ; // 適当な初期値
+    T prev = 0.0 ;
+
+    while ( x != prev )
+    { // 十分な精度が得られるまでステップ2を繰り返す
+        prev = x ;
+        x = (x + s / x ) / 2.0 ; // ステップ2
+    }
+    return x ;
+}
+
+</code></pre>
+
+<p>
+通常の実行時関数のコードと、ほぼ変わりがなくなる。
+</p>
+
+</article>
+
+<article>
+<h1 id="decltype_auto">
+<a href="#decltype_auto">decltype(auto)</a>
+</h1>
+
+<p>
+C++14では、型指定子にdecltype(auto)が追加された。これはautoに似ている。
+</p>
+
+<pre><code>
+auto a = 0 ; // int
+decltype(auto) b = 0 ; // int
+</code></pre>
+
+
+<p>
+decltype(auto)は、あたかもdecltype(auto)のautoを、初期化子の中の式で置換したかのように振る舞う。
+</p>
+
+<pre><code>int &amp; f()
+{
+    static int obj ;
+    return obj ;
+}
+
+int main()
+{
+    // int
+    auto a = f() ;
+
+    // int &amp;
+    // delctype(f()) b = f() ;と同じ
+    decltype(auto) b = f() ;
+}
+</code></pre>
+
+<p>
+auto指定子はテンプレートの実引数推定の使って型を推定する。
+</p>
+
+<p>
+例えば、
+</p>
+
+<pre><code>auto x = expr ;
+</code></pre>
+
+<p>
+という宣言の場合、xの型Tは
+</p>
+
+<pre><code>template < typename T >
+void f( T x ) ;
+</code></pre>
+
+<p>
+という関数テンプレートの実引数初期化子の式exprを渡した場合のT型になる。
+</p>
+
+<p>
+テンプレートの実引数推定は、リファレンスが取り除かれたり、配列がポインターになったりと、様々な標準型変換が行われる。
+</p>
+
+<p>
+一方、decltype(auto)は、autoを初期化子で置き換えたかのように振る舞う。
+</p>
+
+<pre><code>decltype(expr) x = expr ;
+</code></pre>
+
+<p>
+decltype(auto)と書かずに、decltype(expr)と書いてもよいのだが、その場合、decltypeの中の式と、初期化子とで、式が重複する。
+</p>
+
+<pre><code>decltype( a + b * c - d ) x = a + b * c - d ;
+</code></pre>
+
+<p>
+もし式を間違えてしまった場合、結果も違ってしまう。後で史記を書き変える場合には、二箇所を書き換えなければならない。
+</p>
+
+<p>
+このようなコードの重複を避けるためと、後述する関数の戻り値の型推定のために、decltype(auto)が追加された。
+</p>
+
+
+
 </article>
 
 
