@@ -465,8 +465,6 @@ C++11では、この場合にmをコピーキャプチャーするには、ま�
 実装としては、クロージャー型のoperator ()をメンバーテンプレートにするシンタックスシュガーだと考えることができる。
 </p>
 
-<pre><code>
-</code></pre>
 
 <pre><code>struct closure_type
 {
@@ -690,11 +688,10 @@ constexpr T sqrt( T s )
 </h1>
 
 <p>
-C++14では、型指定子にdecltype(auto)が追加された。これはautoに似ている。
+C++14では、型指定子にdecltype(auto)がというプレイスホルダー型が追加された。これは同じくプレイスホルダー型のautoに似ている。
 </p>
 
-<pre><code>
-auto a = 0 ; // int
+<pre><code>auto a = 0 ; // int
 decltype(auto) b = 0 ; // int
 </code></pre>
 
@@ -744,11 +741,22 @@ void f( T x ) ;
 </p>
 
 <p>
-テンプレートの実引数推定は、リファレンスが取り除かれたり、配列がポインターになったりと、様々な標準型変換が行われる。
+テンプレートの実引数推定は、リファレンスが取り除かれたり、配列がポインターになったりと、様々な標準型変換が行われる。そのため、auto指定子による型は、初期化子の型と同一にはならないことがある。
 </p>
 
 <p>
-一方、decltype(auto)は、autoを初期化子で置き換えたかのように振る舞う。
+一方、decltype(auto)は、あたかもdecltype(auto)のauto部分を初期化子の式で置き換えたかのように振る舞う。
+</p>
+
+<p>
+例えば、
+</p>
+
+<pre><code>auto x = expr ;
+</code></pre>
+
+<p>
+という宣言は、以下のように書いたものと同じになる。
 </p>
 
 <pre><code>decltype(expr) x = expr ;
@@ -769,8 +777,183 @@ decltype(auto)と書かずに、decltype(expr)と書いてもよいのだが、�
 このようなコードの重複を避けるためと、後述する関数の戻り値の型推定のために、decltype(auto)が追加された。
 </p>
 
+
+</article>
+
+<article>
+<h1 id="return_type_deduction">
+<a href="#return_type_deduction">戻り地の型推定</a>
+</h1>
+
 <p>
+C++14では、通常の関数にも、lambda式のような戻り値の型推定が追加された。
 </p>
+
+<p>
+戻り値の型推定とは、関数の戻り値の型を、return文のオペランドの式から推定させる機能である。
+</p>
+
+<p>
+文法は、戻り値の型を記述するところに、auto、あるいはdecltype(auto)を書く。
+</p>
+
+<pre><code>// 前置記法
+auto a() { return 0 ; }
+decltype(auto) b() { return 0 ; }
+
+// 後置記法
+auto c() -&gt; auto { return 0 ; } 
+auto d() -&gt; decltype(auto) { return 0 ; }
+</code></pre>
+
+<p>
+上記の関数の型は、すべてint()となる。
+</p>
+
+<p>
+戻り値の型推定は、return文のオペランドの式から、戻り値の型を推定してくれる。型推定の方法は、auto指定子
+やdecltye(auto)指定子と同じ方法で行われる。
+</p>
+
+<pre><code>// int ( int &amp; )
+auto f( int &amp; ref ) { return ref ; }
+// int &amp; ( int &amp; )
+decltype(auto) g( int &amp; ref ) { return ref ; }
+</code></pre>
+
+<p>
+decltype(auto)がC++14に追加された理由は、戻り値の型推定のためだ。autoはリファレンスを型推定できない。auto &amp;&amp;は常にリファレンスになってしまう。
+</p>
+
+<pre><code>// int ( int &amp; )
+auto a( int &amp; ref ) { return ref ; }
+// int &amp; ( int &amp; )
+auto &amp;&amp; b( int &amp; ref ) { return ref ; }
+// int &amp;&amp; ( )
+auto &amp;&amp; c() { return 0 ; }
+</code></pre>
+
+<p>
+decltype(auto)を使えば、リファレンス型はリファレンス型となり、リファレンスではない型はリファレンスではなくなる。
+</p>
+
+<pre><code>// OK
+// ただし、int &amp; ( int &amp;&amp; )
+auto &amp;&amp; a( int &amp;&amp; ref ) { return ref ; }
+
+// OK、int &amp;&amp; ( int &amp;&amp; )
+// ただしstd::moveを忘れると悲惨なことになる
+auto &amp;&amp; b( int &amp;&amp; ref ) { return std::move(ref) ; }
+
+
+// エラーになってくれる
+// 戻り値の型は int &amp;&amp;だが、refはlvalue
+decltype(auto) c( int &amp;&amp; ref ) { return ref ; }
+
+// OK
+// std::move(ref)はrvalue
+decltype(auto) g( int &amp;&amp; ref )
+{ return std::move(ref) ; }
+</code></pre>
+
+<p>
+戻り値の型推定を行う関数の本体には、複数のreturn文を書くことができる。ただし、return文のオペランドの型はすべて同一でなければならない。
+</p>
+
+<pre><code>// どのreturn文のオペランドも同じ型
+auto f( bool b )
+{
+    if ( b )
+        return 0 ; // OK、int
+    else
+        return 0 ; // OK、int
+}
+
+// return文のオペランドの型が違う
+auto g( bool b )
+{
+    if ( b )
+        return 0 ; // エラー、int
+    else
+        return 0L ; // エラー、long
+}
+</code></pre>
+
+<p>
+戻り値の型推定は、再帰もできる。すべてのreturn文のオペランドの型が同じであればよい。
+</p>
+
+<pre><code>auto ackermann( unsigned m, unsigned n )
+{
+    if ( m == 0u )
+        return n + 1u ;
+    else if ( n == 0u )
+        return ackermann( m - 1u, 1u ) ;
+    else
+        return ackermann( m - 1u,
+                          ackermann( m, n - 1u ) ) ;
+}
+</code></pre>
+
+<p>
+初期化リストを型推定することはできない。
+</p>
+
+<pre><code>auto f()
+{
+    // エラー、std::initializer_list&lt;int&gt;
+    return { 0 } ;
+}
+</code></pre>
+
+<p>
+virtual関数の戻り値の型推定を行うことはできない。
+</p>
+
+<pre><code>struct X
+{
+    // エラー、virtual関数
+    virtual auto f() { return 0 ; }
+} ;
+</code></pre>
+
+<p>
+virtual関数をサポートする技術的な問題はないのだが、C++14ではvirtual関数のサポートは見送られた。
+</p>
+
+<p>
+戻り値の型推定を使った関数の再宣言はできる。ただし、型推定を行わない宣言になるので、宣言が一致していなければならない。
+</p>
+
+<pre><code>auto f() ; // OK、宣言
+// OK、定義
+auto f() { return 0 ; }
+
+auto f() ; // OK、再宣言
+
+// 別の関数
+// エラー、戻り値の型の違いだけでオーバーロードはできない
+int f() ;
+</code></pre>
+
+<p>
+関数fの戻り値の型はintだが、int型を明示的に記述した宣言は、別の関数の宣言になる。
+</p>
+
+<p>
+戻り値の型推定を使った宣言は、定義なしで使うことはできない
+</p>
+
+<pre><code>auto f() ; // 宣言
+
+auto x = f() ; // エラー
+
+// 定義
+auto f() { return 0 ; }
+
+auto y = f() ; // OK
+</code></pre>
+
 
 
 </article>
