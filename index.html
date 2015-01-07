@@ -296,7 +296,7 @@ std::uint32_t hex = 0xde'ad'be'af ;
 </p>
 
 <p>
-lambda式によって生成されるクロージャー型のデータメンバーを書くシンタックスシュガーだと考えることができる。
+汎用lambdaキャプチャーは、lambda式によって生成されるクロージャー型のデータメンバーとその初期化子を書くシンタックスシュガーだと考えることができる。
 </p>
 
 <pre><code>struct closure_type
@@ -1133,6 +1133,31 @@ enum { enumerator [[deprecated]] = 0 } ;
 // テンプレート化する宣言に同じ
 template &lt; typename T &gt;
 class [[deprecated]] TC { } ;
+</code></pre>
+
+<p>
+deprecated属性なしで宣言された名前やエンティティを再宣言する際に、deprecated属性をつけることができる。その逆もできる。
+</p>
+
+<pre><code>[[deprecated]]  void f() ;
+                void f() ; // OK
+
+                void g() ;
+[[deprecated]]  void g() ; // OK
+</code></pre>
+
+<p>
+ただし、deprecated属性付きの宣言のあとにdeprecated属性なしの再宣言をしたとしても、deprecated属性は取り消されない。
+</p>
+
+<p>
+deprecated属性の文字列リテラルの有無も、宣言ごとに変えてよい。
+</p>
+
+<pre><code>
+[[deprecated]] void f() ;
+[[deprecated("DO NOT USE")]] void f() ; // OK
+[[deprecated("obsolete")]] void f() ; // OK
 </code></pre>
 
 
