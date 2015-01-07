@@ -1185,6 +1185,152 @@ X x = { 1 } ;
 
 </article>
 
+<article>
+<h1 id="variable_template">
+<a href="#variable_template">変数テンプレート(variable template)</a>
+</h1>
+
+<p>
+変数テンプレート(variable template)とは、変数宣言をテンプレート宣言する機能である。
+</p>
+
+<pre><code>template &lt; typename T &gt;
+T value { } ;
+
+int main()
+{
+    value&lt;int&gt; ; // 0
+    value&lt;int&gt; = 1 ;
+    value&lt;int&gt; ; // 1
+
+    value&lt;double&gt; ; // 0.0
+    value&lt;double&gt; = 1.0 ;
+    value&lt;double&gt; ; // 1.0
+}
+</code></pre>
+
+<p>
+変数テンプレートはテンプレートなので、明示的特殊化や、部分的特殊化もできる。
+</p>
+
+
+
+<pre><code>template &lt; typename T &gt;
+constexpr bool value = true ;
+
+// 明示的特殊化
+template &lt; &gt;
+constexpr bool value&lt;long&gt; = false ;
+
+// 部分的特殊化
+template &lt; typename T &gt;
+constexpr bool value&lt; T * &gt; = false ;
+
+int main()
+{
+    value&lt;int&gt; ; // true
+    value&lt;long&gt; ; // false
+    value&lt; int * &gt; ; // false
+}
+</code></pre>
+
+<p>
+変数テンプレートの用途としては、定数に型引数付きの名前を付けるのに使える。
+</p>
+
+<p>
+たとえば、円周率定数に名前を付けたいとする。しかし、数値の型は様々ある。
+</p>
+
+<pre><code>constexpr int pi_i = 3 ;
+constexpr double pi_d = 3.141592 ;
+constexpr float pi_f= 3.14f ;
+
+// 独自の無限精度整数クラス
+const bigint pi_bigint("3.1415926535") ;
+
+template < typename T >
+T area_of_circle( T radius )
+{
+    // 正しい型が分からない
+    return radius * radius * pi_??? ;
+}
+</code></pre>
+
+<p>
+このように型によって名前を変えるのは面倒だ。
+</p>
+
+<p>
+関数テンプレートを使うことはできるが、
+</p>
+
+<pre><code>// 汎用的な定数
+template &lt; typename T &gt;
+constexpr T pi() { return static_cast&lt;T&gt;(3.141592) ; }
+
+// 特殊な型には明示的特殊化で対応
+template &lt; &gt;
+bigint pi&lt;bigint&gt;() { return bigint("3.1415926535") ; }
+
+template &lt; typename T &gt;
+T area_of_circle( T radius )
+{
+    return radius * radius * pi&lt;T&gt;() ; 
+}
+</code></pre>
+
+<p>
+piは定数であり、実引数として渡すものは何もないのに、冗長な関数呼び出し式()を書かなければならない。
+</p>
+
+<p>
+変数テンプレートがあれば、冗長な関数呼び出し式の文法を省くことができる。
+</p>
+
+<pre><code>template &lt; typename T &gt;
+constexpr T pi = static_cast&lt;T&gt;(3.141592) ;
+
+template &lt; &gt;
+bigint pi&lt;bigint&gt;("3.1415926535") ;
+
+template &lt; typename T &gt;
+T area_of_circle( T radius )
+{
+    return radius * radius * pi&lt;T&gt; ; 
+}
+</code></pre>
+
+<p>
+もうひとつの使い方としては、traitsをラップするのに使える。
+</p>
+
+<pre><code>#include &lt;type_traits&gt;
+
+template &lt; typename T &gt;
+constexpr bool is_pointer_v = std::is_same&lt;T&gt;::value ;
+
+template &lt; typename T &gt;
+void f( T )
+{
+    // 面倒
+    bool a = std::is_pointer&lt;T&gt;::value
+
+    // 簡単
+    bool b = is_pointer_v&lt;T&gt; ;
+}
+</code></pre>
+
+<p>
+traitsの戻り値を得るには、constなstaticデータメンバーである::valueを参照しなければならないが、変数テンプレートでラップすることにより、冗長な::valueを書かずにすむ。
+</p>
+
+<p>
+本書を執筆している時点で、このように既存の&lt;type_traits&gt;を変数テンプレートでラップする標準ライブラリが、Library TSに提案されている。将来的には標準ライブラリに採用される見込みだ。
+</p>
+
+</article>
+
 </article>
 
 </div>
