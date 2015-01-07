@@ -399,7 +399,7 @@ C++11では、この場合にmをコピーキャプチャーするには、ま�
 <pre><code>auto X::get_closure()
 {
     int m = this-&gt;m ;
-    return [m]{ return }
+    return [m]{ return m; }
 }
 </code></pre>
 
