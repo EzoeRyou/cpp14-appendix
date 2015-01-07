@@ -682,6 +682,97 @@ constexpr T sqrt( T s )
 
 </article>
 
+<artticle>
+<h1 id="constexpr_not_const">
+<a href="#constexpr_not_const">constexprメンバー関数の暗黙のconst廃止</a>
+</h1>
+
+<p>
+C++11では、constexprな非staticメンバー関数は、暗黙にconst修飾されていた。
+</p>
+
+<pre><code>struct X
+{
+    // fは暗黙にconst
+    constexpr bool f() /* const */
+    { return true ; }
+} ;
+</code></pre>
+
+<p>
+C++14では、constexpr非staticメンバー関数は、暗黙にconst修飾されることはなくなった。
+</p>
+
+<pre><code>struct X
+{
+    // 暗黙にconst修飾されない
+    constexpr bool f()
+    { return true ; }
+} ;
+</code></pre>
+
+
+
+<p>
+このような変更が行われた理由は、あるリテラル型のクラスをコンパイル時にも実行時にも使いたい場合、暗黙のconst修飾が問題になるからだ。
+</p>
+
+<pre><code>struct A
+{
+    int data ;
+
+    // コンパイル時用getter
+    // 暗黙にconst修飾される
+    // 戻り値の型もconst修飾する必要がある
+    constexpr int const &amp; get() const { return data ; }
+
+    // 実行時用getter
+    int &amp; get() { return data ; }
+} ;
+
+int main()
+{
+    // エラー
+    // オーバーロード解決は実行時getterを選択する
+    constexpr int compile_time_data = A{}.get() ;
+
+    A a ;
+    int runtime_data = a.get() ;
+}
+</code></pre>
+
+<p>
+非staticメンバー関数のconst修飾はthisポインターを修飾する。したがって、非staticデータメンバーへの非constなリファレンスを返すには、const_castを使う必要がある。
+</p>
+
+<pre><code>struct A
+{
+    int data ; 
+
+    constexpr int &amp; get() const
+    {
+        return const_cast&lt;A *&gt;(this)-&gt;data ;
+    }
+} ;
+</code></pre>
+
+<p>
+C++14では、constexpr非staticメンバー関数の暗黙のconstがなくなったので、コンパイル時にも実行時にも使えるgetterをconstexpr関数で定義できる。
+</p>
+
+<pre><code>struct A
+{
+    int data ; 
+
+    constexpr int &amp; get()
+    {
+        return data ; // OK
+    }
+} ;
+</code></pre>
+
+</article>
+
 <article>
 <h1 id="decltype_auto">
 <a href="#decltype_auto">decltype(auto)</a>
@@ -958,6 +1049,141 @@ auto y = f() ; // OK
 
 </article>
 
+<article>
+<h1 id="deprecated_attribute">
+<a href="#deprecated_attribute">[[deprecated]]</a>
+</h1>
+
+<p>
+[[deprecated]]属性は、名前やエンティティを、「利用は非推奨」という意味付けをするための機能だ。
+</p>
+
+
+
+<p>
+deprecated属性を付けられた名前やエンティティは、依然として使用できる。C++は実装は、deprecated属性が付けられた名前やエンティティの使用に対し、実装依存の挙動、例えば警告メッセージを発することができる。
+</p>
+
+<pre><code>// 利用は非推奨の関数
+[[deprecated]] void do_something() ;
+
+int main()
+{
+    // 実装は何らかの方法で警告メッセージを出せる
+    do_something() ;
+}
+</code></pre>
+
+<p>
+deprecated属性には、追加の文字列リテラルを記述できる。これは、例えばコンパイラーは警告メッセージとして出力したりできる。
+</p>
+
+<pre><code>[[deprecated("Use do_something_better() instead.")]]
+void do_something() ;
+</code></pre>
+
+<p>
+deprecated属性が指定できる名前は、クラス、typedef名、変数、非staticデータメンバー、関数、名前空間、enum、列挙子、テンプレートだ。
+</p>
+
+<p>
+それぞれの属性を記述する文法は以下の通り。
+</p>
+
+<pre><code>// クラス
+// class/structの後、識別子の前
+class [[deprecated]] X { } ;
+
+
+// typedef名
+// 単純宣言の場合、先頭
+[[deprecated]] typedef int t1 ;
+// エイリアス宣言の場合、識別子の後
+using t2 [[deprecated]] = int ;
+
+// 変数
+// 単純宣言の場合、先頭
+[[deprecated]] int x ;
+
+// 非staticデータメンバー
+// メンバー宣言の場合、先頭
+// staticデータメンバーは変数に含まれる
+struct Y
+{
+    [[deprecated]] int member ;
+} ;
+
+// 関数
+// 先頭
+[[deprecated]] void f() ;
+
+// 名前空間
+// namespaceの後、識別子の前
+namespace [[deprecated]] ns { } 
+
+// enum
+// enumの後、識別子の前
+enum [[deprecated]] E { } ;
+
+// 列挙子
+// 識別子の後、初期化子の前
+enum { enumerator [[deprecated]] = 0 } ;
+
+// テンプレート
+// テンプレート化する宣言に同じ
+template &lt; typename T &gt;
+class [[deprecated]] TC { } ;
+</code></pre>
+
+
+</article>
+
+<article>
+<h1 id="aggregate-nsdmi">
+<a href="#http://www.doorkeeper.jp/%E4%BC%9A%E5%A0%B4/dwango">メンバー初期化子とアグリゲート初期化の併用</a>
+</h1>
+
+<p>
+C++11ではメンバー初期化子とアグリゲート初期化を併用できなかった。
+</p>
+
+<pre><code>// C++11
+struct X
+{
+    int a ;
+    int b = 2 ;
+} ;
+
+X x = { 1 } ;
+// x.a == 1
+// x.b == 0
+</code></pre>
+
+<p>
+アグリゲート初期化子では、対応する初期化子が存在しない非staticデータメンバーは、空の初期化リストで初期化されたものと同じ扱いになる。int型の場合、ゼロ初期化される。
+</p>
+
+<p>
+C++14では、アグリゲート初期化で非staticデータメンバーに対応する初期化子がなく、かつ、メンバー初期化子がある場合は、メンバー初期化子が使われるようになった。
+</p>
+
+<pre><code>// C++14
+struct X
+{
+    int a ;
+    int b = 2 ;
+} ;
+
+X x = { 1 } ;
+// x.a == 1
+// x.b == 2
+</code></pre>
+
+<p>
+したがって、C++11とC++14では、メンバー初期化子とアグリゲート初期化を併用した場合、同じコードでもプログラムの意味が違うことになる。
+</p>
+
+</article>
 
 </article>
 
