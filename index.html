@@ -652,7 +652,7 @@ C++14では、この制限を大幅に緩和した。C++14のconstexpr関数で�
 <li>if文とswitch文</li>
 <li>for, range-based for, while, do-while</li>
 <li>
-敵数式の評価時に寿命が始まるオブジェクトの変更
+定数式の評価時に寿命が始まるオブジェクトの変更
 </li>
 </ul>
 
@@ -843,7 +843,7 @@ void f( T x ) ;
 例えば、
 </p>
 
-<pre><code>auto x = expr ;
+<pre><code>decltype(auto) x = expr ;
 </code></pre>
 
 <p>
@@ -873,7 +873,7 @@ decltype(auto)と書かずに、decltype(expr)と書いてもよいのだが、�
 
 <article>
 <h1 id="return_type_deduction">
-<a href="#return_type_deduction">戻り地の型推定</a>
+<a href="#return_type_deduction">戻り値の型推定</a>
 </h1>
 
 <p>
