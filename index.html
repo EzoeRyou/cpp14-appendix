@@ -1083,7 +1083,7 @@ void do_something() ;
 </code></pre>
 
 <p>
-deprecated属性が指定できる名前は、クラス、typedef名、変数、非staticデータメンバー、関数、名前空間、enum、列挙子、テンプレートだ。
+deprecated属性が指定できる名前は、クラス、typedef名、変数、非staticデータメンバー、関数、名前空間、enum、列挙子、テンプレートの特殊化だ。
 </p>
 
 <p>
@@ -1129,10 +1129,28 @@ enum [[deprecated]] E { } ;
 // 識別子の後、初期化子の前
 enum { enumerator [[deprecated]] = 0 } ;
 
-// テンプレート
+// テンプレートの特殊化
 // テンプレート化する宣言に同じ
 template &lt; typename T &gt;
 class [[deprecated]] TC { } ;
+</code></pre>
+
+<p>
+C++14規格の文面では、[[deprecated]]は、テンプレートの特殊化に対して指定される。テンプレート名自体には指定されない。
+</p>
+
+<pre><code>template &lt; typename T &gt;
+class [[deprecated]] A { } ;
+
+template &lt;
+    template &lt; typename &gt; class T &gt;
+class B { } ;
+
+// deprecated
+A&lt;int&gt; a ;
+
+// deprecatedではない
+B&lt;A&gt; b ; 
 </code></pre>
 
 <p>
@@ -1274,7 +1292,7 @@ constexpr float pi_f= 3.14f ;
 // 独自の無限精度整数クラス
 const bigint pi_bigint("3.1415926535") ;
 
-template < typename T >
+template &lt; typename T &gt;
 T area_of_circle( T radius )
 {
     // 正しい型が分からない
