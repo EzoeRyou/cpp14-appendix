@@ -545,7 +545,7 @@ void operator delete[]( void *, std::size_t ) noexcept ;
 
 <pre><code>
 void * operator new( std::size_t size )
-
+{
     // 何らかの方法でsizeバイトのストレージ確保 
     return ...
 }
